@@ -1,0 +1,128 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type User {
+  id: ID!
+  name: String!
+  password: String!
+}
+
+type Item {
+	id: ID!
+  user: User!
+  title: String!
+  image: String!
+  status: String!
+  author: Author!
+  tags: [Tag!]
+  date: String!
+}
+
+type Author {
+  id: ID!
+  user: User!
+  name: String!
+  birth: Int!
+}
+
+type Tag {
+  id: ID!
+  user: User!
+  name: String!
+}
+
+type Review {
+  id: ID!
+  reviewer: String!
+  item: Item!
+  score: Int!
+  comment: String!
+}
+
+type DbItem {
+	id: ID!
+  user_id: ID!
+  title: String!
+  image: String!
+  status: String!
+  author_id: ID!
+  tags: [ID!]
+  date: String!
+}
+
+type DbAuthor {
+  id: ID!
+  user_id: ID!
+  name: String!
+  birth: Int!
+}
+
+type DbTag {
+  id: ID!
+  user_id: ID!
+  name: String!
+}
+
+type DbReview {
+  id: ID!
+  reviewer: String!
+  item_id: ID!
+  score: Int!
+  comment: String!
+}
+
+input NewUser {
+  name: String!
+  password: String!
+}
+
+input NewItem {
+  user: String!
+  title: String!
+  image: String!
+  status: String!
+  author: String!
+  tags: [String!]
+  date: String!
+}
+
+input NewAuthor {
+  user: String!
+  name: String!
+  birth: Int!
+}
+
+input NewTag {
+  user: String!
+  name: String!
+}
+
+input NewReview {
+  reviewer: String!
+  item: String!
+  score: Int!
+  comment: String!
+}
+
+type Query {
+  users: [User!]!
+  items: [Item!]!
+  authors: [Author!]!
+  tags: [Tag!]!
+  reviews: [Review!]!
+  item(id: String!): Item!
+  tag(id: String!): Tag!
+  author(id: String!): Author!
+  tagItems(tag: String!): [Item!]!
+  authorItems(author: String!): [Item!]!
+  itemReviews(item: String!): [Review!]!
+}
+
+type Mutation {
+  createUser(input: NewUser!): User!
+  createItem(input: NewItem!): Item!
+  createAuthor(input: NewAuthor!): Author!
+  createTag(input: NewTag!): Tag!
+  createReview(input: NewReview!): Review!
+}
