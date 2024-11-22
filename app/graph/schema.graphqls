@@ -2,15 +2,9 @@
 #
 # https://gqlgen.com/getting-started/
 
-type User {
-  id: ID!
-  name: String!
-  password: String!
-}
-
 type Item {
 	id: ID!
-  user: User!
+  user_id: String!
   title: String!
   image: String!
   status: String!
@@ -21,64 +15,27 @@ type Item {
 
 type Author {
   id: ID!
-  user: User!
+  user_id: String!
   name: String!
   birth: Int!
 }
 
 type Tag {
   id: ID!
-  user: User!
+  user_id: String!
   name: String!
 }
 
 type Review {
   id: ID!
   reviewer: String!
-  item: Item!
+  item: String!
   score: Int!
   comment: String!
-}
-
-type DbItem {
-	id: ID!
-  user_id: ID!
-  title: String!
-  image: String!
-  status: String!
-  author_id: ID!
-  tags: [ID!]
-  date: String!
-}
-
-type DbAuthor {
-  id: ID!
-  user_id: ID!
-  name: String!
-  birth: Int!
-}
-
-type DbTag {
-  id: ID!
-  user_id: ID!
-  name: String!
-}
-
-type DbReview {
-  id: ID!
-  reviewer: String!
-  item_id: ID!
-  score: Int!
-  comment: String!
-}
-
-input NewUser {
-  name: String!
-  password: String!
 }
 
 input NewItem {
-  user: String!
+  user_id: String!
   title: String!
   image: String!
   status: String!
@@ -88,13 +45,13 @@ input NewItem {
 }
 
 input NewAuthor {
-  user: String!
+  user_id: String!
   name: String!
   birth: Int!
 }
 
 input NewTag {
-  user: String!
+  user_id: String!
   name: String!
 }
 
@@ -106,7 +63,6 @@ input NewReview {
 }
 
 type Query {
-  users: [User!]!
   items: [Item!]!
   authors: [Author!]!
   tags: [Tag!]!
@@ -117,10 +73,12 @@ type Query {
   tagItems(tag: String!): [Item!]!
   authorItems(author: String!): [Item!]!
   itemReviews(item: String!): [Review!]!
+  userItems(user: String): [Item!]!
+  userAuthors(user: String): [Author!]!
+  userTags(user: String): [Tag!]!
 }
 
 type Mutation {
-  createUser(input: NewUser!): User!
   createItem(input: NewItem!): Item!
   createAuthor(input: NewAuthor!): Author!
   createTag(input: NewTag!): Tag!

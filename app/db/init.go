@@ -11,9 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var DB *sql.DB
-
-func ConnectDatabase() {
+func ConnectDatabase() *sql.DB {
 	godotenv.Load(".env")
 	dbName := os.Getenv("DATABASE_NAME")
 	dbUser := os.Getenv("DATABASE_USER")
@@ -30,5 +28,5 @@ func ConnectDatabase() {
 		panic(err)
 	}
 	fmt.Println("DB接続")
-	DB = db
+	return db
 }
