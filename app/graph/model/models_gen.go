@@ -3,66 +3,23 @@
 package model
 
 type Author struct {
-	ID    string `json:"id"`
-	User  *User  `json:"user"`
-	Name  string `json:"name"`
-	Birth int    `json:"birth"`
-}
-
-type DbAuthor struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id"`
 	Name   string `json:"name"`
 	Birth  int    `json:"birth"`
 }
 
-type DbItem struct {
-	ID       string   `json:"id"`
-	UserID   string   `json:"user_id"`
-	Title    string   `json:"title"`
-	Image    string   `json:"image"`
-	Status   string   `json:"status"`
-	AuthorID string   `json:"author_id"`
-	Tags     []string `json:"tags,omitempty"`
-	Date     string   `json:"date"`
-}
-
-type DbReview struct {
-	ID       string `json:"id"`
-	Reviewer string `json:"reviewer"`
-	ItemID   string `json:"item_id"`
-	Score    int    `json:"score"`
-	Comment  string `json:"comment"`
-}
-
-type DbTag struct {
-	ID     string `json:"id"`
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
-}
-
-type Item struct {
-	ID     string  `json:"id"`
-	User   *User   `json:"user"`
-	Title  string  `json:"title"`
-	Image  string  `json:"image"`
-	Status string  `json:"status"`
-	Author *Author `json:"author"`
-	Tags   []*Tag  `json:"tags,omitempty"`
-	Date   string  `json:"date"`
-}
-
 type Mutation struct {
 }
 
 type NewAuthor struct {
-	User  string `json:"user"`
-	Name  string `json:"name"`
-	Birth int    `json:"birth"`
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
+	Birth  int    `json:"birth"`
 }
 
 type NewItem struct {
-	User   string   `json:"user"`
+	UserID string   `json:"user_id"`
 	Title  string   `json:"title"`
 	Image  string   `json:"image"`
 	Status string   `json:"status"`
@@ -79,13 +36,8 @@ type NewReview struct {
 }
 
 type NewTag struct {
-	User string `json:"user"`
-	Name string `json:"name"`
-}
-
-type NewUser struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
 }
 
 type Query struct {
@@ -94,19 +46,13 @@ type Query struct {
 type Review struct {
 	ID       string `json:"id"`
 	Reviewer string `json:"reviewer"`
-	Item     *Item  `json:"item"`
+	Item     string `json:"item"`
 	Score    int    `json:"score"`
 	Comment  string `json:"comment"`
 }
 
 type Tag struct {
-	ID   string `json:"id"`
-	User *User  `json:"user"`
-	Name string `json:"name"`
-}
-
-type User struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
 }
