@@ -27,7 +27,7 @@ func (u *AuthorLoader) BatchGetAuthors(ctx context.Context, keys dataloader.Keys
 
 	authorsTemp := []*model.Author{}
 
-	rows, err := u.DB.Query("SELECT id, user_id, name, birth FROM \"sketch_authors\" WHERE id = any($1)", pq.Array(authorIDs))
+	rows, err := u.DB.Query("SELECT id, name, birth FROM \"sketch_authors\" WHERE id = any($1)", pq.Array(authorIDs))
 	if err != nil {
 		err := fmt.Errorf("fail get authors, %w", err)
 		log.Printf("%v\n", err)
