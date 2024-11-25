@@ -12,21 +12,21 @@ DELETE FROM
   sketch_reviews;
 
 INSERT INTO
-  sketch_authors (user_id, name, birth)
+  sketch_authors (name, birth)
 VALUES
-  ('user1', '長女', 2018),
-('user1', '次女', 2022);
+  ('長女', 2018),
+('次女', 2022);
 
 INSERT INTO
-  sketch_tags (user_id, name)
+  sketch_tags (name)
 VALUES
-  ('user1', '保育園'),
-('user1', '家'),
-('user1', '家族'),
-('user1', 'キャラクター'),
-('user1', '動物'),
-('user1', 'クレヨン'),
-('user1', '工作');
+  ('保育園'),
+('家'),
+('家族'),
+('キャラクター'),
+('動物'),
+('クレヨン'),
+('工作');
 
 INSERT INTO
   sketch_items (user_id, title, image, status, author_id, tag_ids, date)

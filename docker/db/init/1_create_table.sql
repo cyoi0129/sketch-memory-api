@@ -1,13 +1,11 @@
 CREATE TABLE sketch_authors (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name text NOT NULL,
-  birth integer,
-  user_id text
+  birth integer
 );
 CREATE TABLE sketch_tags (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name text NOT NULL,
-  user_id text
+  name text NOT NULL
 );
 CREATE TABLE sketch_items (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

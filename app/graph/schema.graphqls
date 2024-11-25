@@ -15,14 +15,12 @@ type Item {
 
 type Author {
   id: ID!
-  user_id: String!
   name: String!
   birth: Int!
 }
 
 type Tag {
   id: ID!
-  user_id: String!
   name: String!
 }
 
@@ -45,13 +43,11 @@ input NewItem {
 }
 
 input NewAuthor {
-  user_id: String!
   name: String!
   birth: Int!
 }
 
 input NewTag {
-  user_id: String!
   name: String!
 }
 
@@ -74,12 +70,11 @@ type Query {
   authorItems(author: String!): [Item!]!
   itemReviews(item: String!): [Review!]!
   userItems(user: String): [Item!]!
-  userAuthors(user: String): [Author!]!
-  userTags(user: String): [Tag!]!
 }
 
 type Mutation {
   createItem(input: NewItem!): Item!
+  updateItem(id: String!, input: NewItem): Item!
   createAuthor(input: NewAuthor!): Author!
   createTag(input: NewTag!): Tag!
   createReview(input: NewReview!): Review!
