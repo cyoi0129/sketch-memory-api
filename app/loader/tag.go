@@ -27,7 +27,7 @@ func (u *TagLoader) BatchGetTags(ctx context.Context, keys dataloader.Keys) []*d
 
 	tagsTemp := []*model.Tag{}
 
-	rows, err := u.DB.Query("SELECT id, user_id, name FROM \"sketch_tags\" WHERE id = any($1)", pq.Array(tagIDs))
+	rows, err := u.DB.Query("SELECT id, name FROM \"sketch_tags\" WHERE id = any($1)", pq.Array(tagIDs))
 	if err != nil {
 		err := fmt.Errorf("fail get tags, %w", err)
 		log.Printf("%v\n", err)
