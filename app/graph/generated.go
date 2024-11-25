@@ -49,10 +49,9 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Author struct {
-		Birth  func(childComplexity int) int
-		ID     func(childComplexity int) int
-		Name   func(childComplexity int) int
-		UserID func(childComplexity int) int
+		Birth func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Name  func(childComplexity int) int
 	}
 
 	Item struct {
@@ -71,6 +70,7 @@ type ComplexityRoot struct {
 		CreateItem   func(childComplexity int, input model.NewItem) int
 		CreateReview func(childComplexity int, input model.NewReview) int
 		CreateTag    func(childComplexity int, input model.NewTag) int
+		UpdateItem   func(childComplexity int, id string, input *model.NewItem) int
 	}
 
 	Query struct {
@@ -84,9 +84,7 @@ type ComplexityRoot struct {
 		Tag         func(childComplexity int, id string) int
 		TagItems    func(childComplexity int, tag string) int
 		Tags        func(childComplexity int) int
-		UserAuthors func(childComplexity int, user *string) int
 		UserItems   func(childComplexity int, user *string) int
-		UserTags    func(childComplexity int, user *string) int
 	}
 
 	Review struct {
@@ -98,9 +96,8 @@ type ComplexityRoot struct {
 	}
 
 	Tag struct {
-		ID     func(childComplexity int) int
-		Name   func(childComplexity int) int
-		UserID func(childComplexity int) int
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
 	}
 }
 
@@ -110,6 +107,7 @@ type ItemResolver interface {
 }
 type MutationResolver interface {
 	CreateItem(ctx context.Context, input model.NewItem) (*model.Item, error)
+	UpdateItem(ctx context.Context, id string, input *model.NewItem) (*model.Item, error)
 	CreateAuthor(ctx context.Context, input model.NewAuthor) (*model.Author, error)
 	CreateTag(ctx context.Context, input model.NewTag) (*model.Tag, error)
 	CreateReview(ctx context.Context, input model.NewReview) (*model.Review, error)
@@ -126,8 +124,6 @@ type QueryResolver interface {
 	AuthorItems(ctx context.Context, author string) ([]*model.Item, error)
 	ItemReviews(ctx context.Context, item string) ([]*model.Review, error)
 	UserItems(ctx context.Context, user *string) ([]*model.Item, error)
-	UserAuthors(ctx context.Context, user *string) ([]*model.Author, error)
-	UserTags(ctx context.Context, user *string) ([]*model.Tag, error)
 }
 
 type executableSchema struct {
@@ -169,13 +165,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Author.Name(childComplexity), true
-
-	case "Author.user_id":
-		if e.complexity.Author.UserID == nil {
-			break
-		}
-
-		return e.complexity.Author.UserID(childComplexity), true
 
 	case "Item.author":
 		if e.complexity.Item.Author == nil {
@@ -281,6 +270,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateTag(childComplexity, args["input"].(model.NewTag)), true
 
+	case "Mutation.updateItem":
+		if e.complexity.Mutation.UpdateItem == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateItem_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateItem(childComplexity, args["id"].(string), args["input"].(*model.NewItem)), true
+
 	case "Query.author":
 		if e.complexity.Query.Author == nil {
 			break
@@ -381,18 +382,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Tags(childComplexity), true
 
-	case "Query.userAuthors":
-		if e.complexity.Query.UserAuthors == nil {
-			break
-		}
-
-		args, err := ec.field_Query_userAuthors_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.UserAuthors(childComplexity, args["user"].(*string)), true
-
 	case "Query.userItems":
 		if e.complexity.Query.UserItems == nil {
 			break
@@ -404,18 +393,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.UserItems(childComplexity, args["user"].(*string)), true
-
-	case "Query.userTags":
-		if e.complexity.Query.UserTags == nil {
-			break
-		}
-
-		args, err := ec.field_Query_userTags_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.UserTags(childComplexity, args["user"].(*string)), true
 
 	case "Review.comment":
 		if e.complexity.Review.Comment == nil {
@@ -465,13 +442,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Tag.Name(childComplexity), true
-
-	case "Tag.user_id":
-		if e.complexity.Tag.UserID == nil {
-			break
-		}
-
-		return e.complexity.Tag.UserID(childComplexity), true
 
 	}
 	return 0, false
@@ -693,6 +663,47 @@ func (ec *executionContext) field_Mutation_createTag_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateItem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_updateItem_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateItem_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateItem_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateItem_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*model.NewItem, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalONewItem2ᚖsketchᚋgraphᚋmodelᚐNewItem(ctx, tmp)
+	}
+
+	var zeroVal *model.NewItem
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -854,29 +865,6 @@ func (ec *executionContext) field_Query_tag_argsID(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_userAuthors_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_userAuthors_argsUser(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["user"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Query_userAuthors_argsUser(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
-	if tmp, ok := rawArgs["user"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Query_userItems_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -888,29 +876,6 @@ func (ec *executionContext) field_Query_userItems_args(ctx context.Context, rawA
 	return args, nil
 }
 func (ec *executionContext) field_Query_userItems_argsUser(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
-	if tmp, ok := rawArgs["user"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_userTags_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_userTags_argsUser(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["user"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Query_userTags_argsUser(
 	ctx context.Context,
 	rawArgs map[string]interface{},
 ) (*string, error) {
@@ -1016,50 +981,6 @@ func (ec *executionContext) fieldContext_Author_id(_ context.Context, field grap
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Author_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Author_user_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UserID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Author_user_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Author",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1414,8 +1335,6 @@ func (ec *executionContext) fieldContext_Item_author(_ context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Author_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Author_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Author_name(ctx, field)
 			case "birth":
@@ -1465,8 +1384,6 @@ func (ec *executionContext) fieldContext_Item_tags(_ context.Context, field grap
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Tag_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Tag_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Tag_name(ctx, field)
 			}
@@ -1593,6 +1510,79 @@ func (ec *executionContext) fieldContext_Mutation_createItem(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateItem(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateItem(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateItem(rctx, fc.Args["id"].(string), fc.Args["input"].(*model.NewItem))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Item)
+	fc.Result = res
+	return ec.marshalNItem2ᚖsketchᚋgraphᚋmodelᚐItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateItem(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Item_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_Item_user_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Item_title(ctx, field)
+			case "image":
+				return ec.fieldContext_Item_image(ctx, field)
+			case "status":
+				return ec.fieldContext_Item_status(ctx, field)
+			case "author":
+				return ec.fieldContext_Item_author(ctx, field)
+			case "tags":
+				return ec.fieldContext_Item_tags(ctx, field)
+			case "date":
+				return ec.fieldContext_Item_date(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Item", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateItem_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createAuthor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createAuthor(ctx, field)
 	if err != nil {
@@ -1634,8 +1624,6 @@ func (ec *executionContext) fieldContext_Mutation_createAuthor(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Author_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Author_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Author_name(ctx, field)
 			case "birth":
@@ -1699,8 +1687,6 @@ func (ec *executionContext) fieldContext_Mutation_createTag(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Tag_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Tag_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Tag_name(ctx, field)
 			}
@@ -1891,8 +1877,6 @@ func (ec *executionContext) fieldContext_Query_authors(_ context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Author_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Author_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Author_name(ctx, field)
 			case "birth":
@@ -1945,8 +1929,6 @@ func (ec *executionContext) fieldContext_Query_tags(_ context.Context, field gra
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Tag_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Tag_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Tag_name(ctx, field)
 			}
@@ -2126,8 +2108,6 @@ func (ec *executionContext) fieldContext_Query_tag(ctx context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Tag_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Tag_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Tag_name(ctx, field)
 			}
@@ -2189,8 +2169,6 @@ func (ec *executionContext) fieldContext_Query_author(ctx context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Author_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Author_user_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Author_name(ctx, field)
 			case "birth":
@@ -2493,134 +2471,6 @@ func (ec *executionContext) fieldContext_Query_userItems(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_userItems_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_userAuthors(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_userAuthors(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserAuthors(rctx, fc.Args["user"].(*string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Author)
-	fc.Result = res
-	return ec.marshalNAuthor2ᚕᚖsketchᚋgraphᚋmodelᚐAuthorᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_userAuthors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Author_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Author_user_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Author_name(ctx, field)
-			case "birth":
-				return ec.fieldContext_Author_birth(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_userAuthors_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_userTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_userTags(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserTags(rctx, fc.Args["user"].(*string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Tag)
-	fc.Result = res
-	return ec.marshalNTag2ᚕᚖsketchᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_userTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Tag_id(ctx, field)
-			case "user_id":
-				return ec.fieldContext_Tag_user_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Tag_name(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_userTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3015,50 +2865,6 @@ func (ec *executionContext) fieldContext_Tag_id(_ context.Context, field graphql
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Tag_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Tag) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Tag_user_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UserID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Tag_user_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Tag",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4888,20 +4694,13 @@ func (ec *executionContext) unmarshalInputNewAuthor(ctx context.Context, obj int
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"user_id", "name", "birth"}
+	fieldsInOrder := [...]string{"name", "birth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "user_id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -5046,20 +4845,13 @@ func (ec *executionContext) unmarshalInputNewTag(ctx context.Context, obj interf
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"user_id", "name"}
+	fieldsInOrder := [...]string{"name"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "user_id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -5094,11 +4886,6 @@ func (ec *executionContext) _Author(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = graphql.MarshalString("Author")
 		case "id":
 			out.Values[i] = ec._Author_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user_id":
-			out.Values[i] = ec._Author_user_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5290,6 +5077,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createItem":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createItem(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateItem":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateItem(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5599,50 +5393,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "userAuthors":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_userAuthors(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "userTags":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_userTags(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -5746,11 +5496,6 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = graphql.MarshalString("Tag")
 		case "id":
 			out.Values[i] = ec._Tag_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user_id":
-			out.Values[i] = ec._Tag_user_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6697,6 +6442,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalONewItem2ᚖsketchᚋgraphᚋmodelᚐNewItem(ctx context.Context, v interface{}) (*model.NewItem, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewItem(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

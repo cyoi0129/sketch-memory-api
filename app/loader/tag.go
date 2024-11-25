@@ -35,7 +35,7 @@ func (u *TagLoader) BatchGetTags(ctx context.Context, keys dataloader.Keys) []*d
 	}
 	for rows.Next() {
 		var tag model.Tag
-		rows.Scan(&tag.ID, &tag.UserID, &tag.Name)
+		rows.Scan(&tag.ID, &tag.Name)
 		tagsTemp = append(tagsTemp, &tag)
 	}
 

@@ -35,7 +35,7 @@ func (u *AuthorLoader) BatchGetAuthors(ctx context.Context, keys dataloader.Keys
 	}
 	for rows.Next() {
 		var author model.Author
-		rows.Scan(&author.ID, &author.UserID, &author.Name, &author.Birth)
+		rows.Scan(&author.ID, &author.Name, &author.Birth)
 		authorsTemp = append(authorsTemp, &author)
 	}
 

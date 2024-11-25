@@ -3,19 +3,17 @@
 package model
 
 type Author struct {
-	ID     string `json:"id"`
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
-	Birth  int    `json:"birth"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Birth int    `json:"birth"`
 }
 
 type Mutation struct {
 }
 
 type NewAuthor struct {
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
-	Birth  int    `json:"birth"`
+	Name  string `json:"name"`
+	Birth int    `json:"birth"`
 }
 
 type NewItem struct {
@@ -36,8 +34,7 @@ type NewReview struct {
 }
 
 type NewTag struct {
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
+	Name string `json:"name"`
 }
 
 type Query struct {
@@ -52,7 +49,6 @@ type Review struct {
 }
 
 type Tag struct {
-	ID     string `json:"id"`
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }

@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sketch/graph/model"
 	"sketch/loader"
@@ -21,8 +22,8 @@ func (r *itemResolver) Author(ctx context.Context, obj *model.Item) (*model.Auth
 	}
 	return authors, nil
 	// var author model.Author
-	// row := r.DB.QueryRow("SELECT id, user_id, name, birth FROM \"sketch_authors\" WHERE id = $1", obj.AuthorID)
-	// err := row.Scan(&author.ID, &author.UserID, &author.Name, &author.Birth)
+	// row := r.DB.QueryRow("SELECT id, name, birth FROM \"sketch_authors\" WHERE id = $1", obj.AuthorID)
+	// err := row.Scan(&author.ID, &author.Name, &author.Birth)
 	// if err != nil {
 	// 	fmt.Println(err)
 	// 	return &author, err
@@ -41,14 +42,14 @@ func (r *itemResolver) Tags(ctx context.Context, obj *model.Item) ([]*model.Tag,
 	}
 	return tags, nil
 	// var tags []*model.Tag
-	// rows, err := r.DB.Query("SELECT id, user_id, name FROM \"sketch_tags\" WHERE id = any($1)", pq.Array(obj.TagIDs))
+	// rows, err := r.DB.Query("SELECT id, name FROM \"sketch_tags\" WHERE id = any($1)", pq.Array(obj.TagIDs))
 	// if err != nil {
 	// 	fmt.Println(err)
 	// 	return tags, err
 	// }
 	// for rows.Next() {
 	// 	var tag model.Tag
-	// 	rows.Scan(&tag.ID, &tag.UserID, &tag.Name)
+	// 	rows.Scan(&tag.ID, &tag.Name)
 	// 	tags = append(tags, &tag)
 	// }
 	// return tags, nil
@@ -66,6 +67,29 @@ func (r *mutationResolver) CreateItem(ctx context.Context, input model.NewItem) 
 		UserID:   input.UserID,
 	}
 	err := r.DB.QueryRow("INSERT INTO sketch_items(title, image, status, date, author_id, tag_ids, user_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id", input.Title, input.Image, input.Status, input.Date, input.Author, pq.Array(&input.Tags), input.UserID).Scan(&item.ID)
+
+	if err != nil {
+		fmt.Println(err)
+		return &item, err
+	}
+	return &item, nil
+}
+
+// UpdateItem is the resolver for the updateItem field.
+func (r *mutationResolver) UpdateItem(ctx context.Context, id string, input *model.NewItem) (*model.Item, error) {
+	item := model.Item{
+		ID:       id,
+		Title:    input.Title,
+		Image:    input.Image,
+		Status:   input.Status,
+		Date:     input.Date,
+		AuthorID: input.Author,
+		TagIDs:   input.Tags,
+		UserID:   input.UserID,
+	}
+
+	_, err := r.DB.Query("UPDATE \"sketch_items\" SET title = $1, image = $2, status = $3, date = $4, author_id = $5, tag_ids = ($6), user_id = $7 WHERE ID = $8", input.Title, input.Image, input.Status, input.Date, input.Author, pq.Array(&input.Tags), input.UserID, id)
+
 	if err != nil {
 		fmt.Println(err)
 		return &item, err
@@ -76,30 +100,41 @@ func (r *mutationResolver) CreateItem(ctx context.Context, input model.NewItem) 
 // CreateAuthor is the resolver for the createAuthor field.
 func (r *mutationResolver) CreateAuthor(ctx context.Context, input model.NewAuthor) (*model.Author, error) {
 	author := model.Author{
-		Name:   input.Name,
-		Birth:  input.Birth,
-		UserID: input.UserID,
+		Name:  input.Name,
+		Birth: input.Birth,
 	}
-	err := r.DB.QueryRow("INSERT INTO sketch_authors(name, birth, user_id) VALUES($1,$2,$3) RETURNING id", input.Name, input.Birth, input.UserID).Scan(&author.ID)
-	if err != nil {
-		fmt.Println(err)
-		return &author, err
+	var result string
+	r.DB.QueryRow("SELECT id FROM sketch_authors WHERE name = $1", input.Name).Scan(&result)
+	if result == "" {
+		err := r.DB.QueryRow("INSERT INTO sketch_authors(name, birth) VALUES($1,$2) RETURNING id", input.Name, input.Birth).Scan(&author.ID)
+		if err != nil {
+			fmt.Println(err)
+			return &author, err
+		}
+		return &author, nil
 	}
-	return &author, nil
+	exist_err := errors.New("exist item")
+	return &author, exist_err
 }
 
 // CreateTag is the resolver for the createTag field.
 func (r *mutationResolver) CreateTag(ctx context.Context, input model.NewTag) (*model.Tag, error) {
 	tag := model.Tag{
-		Name:   input.Name,
-		UserID: input.UserID,
+		Name: input.Name,
 	}
-	err := r.DB.QueryRow("INSERT INTO sketch_tags(name, user_id) VALUES($1,$2) RETURNING id", input.Name, input.UserID).Scan(&tag.ID)
-	if err != nil {
-		fmt.Println(err)
-		return &tag, err
+
+	var result string
+	r.DB.QueryRow("SELECT id FROM sketch_tags WHERE name = $1", input.Name).Scan(&result)
+	if result == "" {
+		err := r.DB.QueryRow("INSERT INTO sketch_tags(name) VALUES($1) RETURNING id", input.Name).Scan(&tag.ID)
+		if err != nil {
+			fmt.Println(err)
+			return &tag, err
+		}
+		return &tag, nil
 	}
-	return &tag, nil
+	exist_err := errors.New("exist item")
+	return &tag, exist_err
 }
 
 // CreateReview is the resolver for the createReview field.
@@ -137,14 +172,14 @@ func (r *queryResolver) Items(ctx context.Context) ([]*model.Item, error) {
 // Authors is the resolver for the authors field.
 func (r *queryResolver) Authors(ctx context.Context) ([]*model.Author, error) {
 	var authors []*model.Author
-	rows, err := r.DB.Query("SELECT id, user_id, name, birth FROM \"sketch_authors\"")
+	rows, err := r.DB.Query("SELECT id, name, birth FROM \"sketch_authors\"")
 	if err != nil {
 		fmt.Println(err)
 		return authors, err
 	}
 	for rows.Next() {
 		var author model.Author
-		rows.Scan(&author.ID, &author.UserID, &author.Name, &author.Birth)
+		rows.Scan(&author.ID, &author.Name, &author.Birth)
 		authors = append(authors, &author)
 	}
 	return authors, nil
@@ -153,14 +188,14 @@ func (r *queryResolver) Authors(ctx context.Context) ([]*model.Author, error) {
 // Tags is the resolver for the tags field.
 func (r *queryResolver) Tags(ctx context.Context) ([]*model.Tag, error) {
 	var tags []*model.Tag
-	rows, err := r.DB.Query("SELECT id, user_id, name FROM \"sketch_tags\"")
+	rows, err := r.DB.Query("SELECT id, name FROM \"sketch_tags\"")
 	if err != nil {
 		fmt.Println(err)
 		return tags, err
 	}
 	for rows.Next() {
 		var tag model.Tag
-		rows.Scan(&tag.ID, &tag.UserID, &tag.Name)
+		rows.Scan(&tag.ID, &tag.Name)
 		tags = append(tags, &tag)
 	}
 	return tags, err
@@ -197,8 +232,8 @@ func (r *queryResolver) Item(ctx context.Context, id string) (*model.Item, error
 // Tag is the resolver for the tag field.
 func (r *queryResolver) Tag(ctx context.Context, id string) (*model.Tag, error) {
 	var tag model.Tag
-	row := r.DB.QueryRow("SELECT id, user_id, name FROM \"sketch_tags\" WHERE id = $1", id)
-	err := row.Scan(&tag.ID, &tag.UserID, &tag.Name)
+	row := r.DB.QueryRow("SELECT id, name FROM \"sketch_tags\" WHERE id = $1", id)
+	err := row.Scan(&tag.ID, &tag.Name)
 	if err != nil {
 		fmt.Println(err)
 		return &tag, err
@@ -209,8 +244,8 @@ func (r *queryResolver) Tag(ctx context.Context, id string) (*model.Tag, error) 
 // Author is the resolver for the author field.
 func (r *queryResolver) Author(ctx context.Context, id string) (*model.Author, error) {
 	var author model.Author
-	row := r.DB.QueryRow("SELECT id, user_id, name, birth FROM \"sketch_authors\" WHERE id = $1", id)
-	err := row.Scan(&author.ID, &author.UserID, &author.Name, &author.Birth)
+	row := r.DB.QueryRow("SELECT id, name, birth FROM \"sketch_authors\" WHERE id = $1", id)
+	err := row.Scan(&author.ID, &author.Name, &author.Birth)
 	if err != nil {
 		fmt.Println(err)
 		return &author, err
@@ -281,38 +316,6 @@ func (r *queryResolver) UserItems(ctx context.Context, user *string) ([]*model.I
 		items = append(items, &item)
 	}
 	return items, nil
-}
-
-// UserAuthors is the resolver for the userAuthors field.
-func (r *queryResolver) UserAuthors(ctx context.Context, user *string) ([]*model.Author, error) {
-	var authors []*model.Author
-	rows, err := r.DB.Query("SELECT id, user_id, name, birth FROM \"sketch_authors\" WHERE user_id = $1", user)
-	if err != nil {
-		fmt.Println(err)
-		return authors, err
-	}
-	for rows.Next() {
-		var author model.Author
-		rows.Scan(&author.ID, &author.UserID, &author.Name, &author.Birth)
-		authors = append(authors, &author)
-	}
-	return authors, nil
-}
-
-// UserTags is the resolver for the userTags field.
-func (r *queryResolver) UserTags(ctx context.Context, user *string) ([]*model.Tag, error) {
-	var tags []*model.Tag
-	rows, err := r.DB.Query("SELECT id, user_id, name FROM \"sketch_tags\" WHERE user_id = $1", user)
-	if err != nil {
-		fmt.Println(err)
-		return tags, err
-	}
-	for rows.Next() {
-		var tag model.Tag
-		rows.Scan(&tag.ID, &tag.UserID, &tag.Name)
-		tags = append(tags, &tag)
-	}
-	return tags, err
 }
 
 // Item returns ItemResolver implementation.
