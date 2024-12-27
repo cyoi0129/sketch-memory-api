@@ -34,7 +34,7 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://sketch-memory-app.vercel.app", "http://localhost:3000", "http://localhost:8080", "http://localhost:5173"},
+		AllowedOrigins:   []string{"https://sketch-memory-45uclcya0-tartes-projects.vercel.app", "https://sketch-memory-app.vercel.app", "http://localhost:3000", "http://localhost:8080", "http://localhost:5173"},
 		AllowCredentials: true,
 	})
 	// http.Handle("/query", c.Handler(srv))
